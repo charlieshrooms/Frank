@@ -1,0 +1,96 @@
+{
+  "name": "Parachute",
+  "description": "Conservative survival strategy. On wins: reset and lock gains. On losing streaks: switch to high win-chance mode to tread water, then reset cleanly.",
+  "initial_setup": {
+    "bet_amount": "minimum_possible",
+    "win_chance": 49,
+    "direction": "roll_under"
+  },
+  "bankroll_rules": {
+    "minimum_session_bankroll": "50x base bet",
+    "daily_stop_loss": "20x base bet remaining — stop for the day"
+  },
+  "conditions": [
+    {
+      "number": 1,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 1,
+        "event": "Wins"
+      },
+      "do": {
+        "action": "Reset bet amount"
+      },
+      "note": "Fires first on every win — immediately kills any inflated bet and locks the small recovery."
+    },
+    {
+      "number": 2,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 1,
+        "event": "Losses"
+      },
+      "do": {
+        "action": "Increase bet amount by",
+        "value": 40,
+        "unit": "%"
+      },
+      "note": "Soft martingale — only 40% steps instead of 100%, so the bankroll dies much slower."
+    },
+    {
+      "number": 3,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 4,
+        "event": "Losses"
+      },
+      "do": {
+        "action": "Set win chance",
+        "value": 72
+      },
+      "note": "The parachute — after 4 consecutive losses, switches to 72% win chance. You win 3 out of 4 bets at low payout, surviving instead of bleeding."
+    },
+    {
+      "number": 4,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 4,
+        "event": "Wins"
+      },
+      "do": {
+        "action": "Reset win chance"
+      },
+      "note": "After clawing back 4 wins in survival mode, resets win chance back to the base 49%."
+    },
+    {
+      "number": 5,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 4,
+        "event": "Wins"
+      },
+      "do": {
+        "action": "Reset bet amount"
+      },
+      "note": "Paired with condition 4 — also resets the bet amount to base on the same 4-win recovery."
+    },
+    {
+      "number": 6,
+      "type": "Bet Condition",
+      "on": {
+        "trigger": "Every",
+        "count": 15,
+        "event": "Losses"
+      },
+      "do": {
+        "action": "Stop autobet"
+      },
+      "note": "Hard floor — if losses go 15 deep without recovery, stops the bot entirely so you don't lose everything overnight."
+    }
+  ]
+}
