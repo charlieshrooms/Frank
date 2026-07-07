@@ -21,6 +21,7 @@ This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extr
 - Better button/input selectors for UI updates
 - Seed counter UI sync + reload cycle cap
 - Manual stop without forced page reload
+- If balance is too low to satisfy both site min-bet and safety cap, bot stops instead of forcing a bad bet
 
 ## Install
 

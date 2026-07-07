@@ -27,6 +27,9 @@
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
   const AMOUNT_INPUT_SELECTOR = '.amount__center input, input[type="text"], input[type="number"]';
+  const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const RUN_LOCK_KEY = 'bot_run_lock_v19';
+  const RUN_LOCK_TIMEOUT_MS = 15000;
 
   let isRunning = false;
   let winCount = 0;
@@ -34,7 +37,8 @@
   let currentBet = 0;
   let lastBalance = 0;
   let currentDirection = 'under';
-  let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10) || 0;
+  let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10);
+  if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
 
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -69,8 +73,39 @@
   function getSafeBet(proposedBet, balance) {
     const minBet = getCurrentInputBet();
     const maxBetCap = balance * MAX_BET_PERCENT_OF_BALANCE;
-    if (maxBetCap > minBet) return Math.min(Math.max(proposedBet, minBet), maxBetCap);
-    return minBet;
+    if (maxBetCap < minBet) return 0;
+    return Math.min(Math.max(proposedBet, minBet), maxBetCap);
+  }
+
+  function acquireRunLock() {
+    try {
+      const raw = localStorage.getItem(RUN_LOCK_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const ts = Number(parsed?.ts || 0);
+        const id = String(parsed?.id || '');
+        if (id && Date.now() - ts < RUN_LOCK_TIMEOUT_MS && id !== INSTANCE_ID) return false;
+      }
+      localStorage.setItem(RUN_LOCK_KEY, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
+      return true;
+    } catch {
+      return true;
+    }
+  }
+
+  function refreshRunLock() {
+    try {
+      localStorage.setItem(RUN_LOCK_KEY, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
+    } catch {}
+  }
+
+  function releaseRunLock() {
+    try {
+      const raw = localStorage.getItem(RUN_LOCK_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.id === INSTANCE_ID) localStorage.removeItem(RUN_LOCK_KEY);
+    } catch {}
   }
 
   function addHackerLog(msg) {
@@ -91,6 +126,7 @@
 
   function stopBot(reason) {
     isRunning = false;
+    releaseRunLock();
     addHackerLog(`BOT STOPPED: ${reason}`);
     const mainBtn = document.getElementById('main-btn');
     if (mainBtn) {
@@ -202,11 +238,19 @@
   }
 
   async function runBot() {
+    if (!acquireRunLock()) {
+      addHackerLog('ANOTHER BOT INSTANCE IS RUNNING');
+      return;
+    }
     isRunning = true;
     winCount = 0;
     lossCount = 0;
     lastBalance = getBalance();
-    currentBet = getSafeBet(Math.max(lastBalance * BET_RATIO, MIN_BET_FALLBACK), lastBalance);
+    currentBet = getSafeBet(lastBalance * BET_RATIO, lastBalance);
+    if (currentBet <= 0) {
+      stopBot('BALANCE TOO LOW FOR MIN BET + CAP');
+      return;
+    }
 
     const mainBtn = document.getElementById('main-btn');
     if (mainBtn) {
@@ -216,6 +260,7 @@
     }
 
     while (isRunning) {
+      refreshRunLock();
       if (!document.hidden) applyDiceStrategy();
       const rollBtn = getRollButton();
       if (!rollBtn || rollBtn.disabled) {
@@ -236,12 +281,19 @@
       if (newBal > lastBalance) {
         winCount += 1;
         lossCount = 0;
-        currentBet = getSafeBet(Math.max(newBal * BET_RATIO, MIN_BET_FALLBACK), newBal);
+        currentBet = getSafeBet(newBal * BET_RATIO, newBal);
+        if (currentBet <= 0) {
+          stopBot('BALANCE TOO LOW FOR MIN BET + CAP');
+          return;
+        }
         addHackerLog(`WIN! [${winCount}/${WINS_BEFORE_SEED_REFRESH}]`);
 
         if (winCount >= WINS_BEFORE_SEED_REFRESH) {
-          addHackerLog('2 WINS REACHED - CHANGING SEED & REFRESHING...');
-          const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10) || 0;
+          addHackerLog(`${WINS_BEFORE_SEED_REFRESH} WINS REACHED - CHANGING SEED & REFRESHING...`);
+          const rawCycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10);
+          const cycles = Number.isInteger(rawCycles)
+            ? Math.max(0, Math.min(rawCycles, MAX_AUTO_RELOAD_CYCLES))
+            : 0;
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) {
             stopBot('MAX AUTO-RELOAD CYCLES REACHED');
             return;
