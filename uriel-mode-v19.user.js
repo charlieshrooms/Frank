@@ -33,7 +33,7 @@
   let currentBet = 0;
   let lastBalance = 0;
   let currentDirection = 'under';
-  let seedCounter = parseInt(localStorage.getItem('bot_seed_total') || '0', 10) || 0;
+  let seedCounter = parseInt(localStorage.getItem('bot_seed_total') || '0', 10);
 
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -50,8 +50,9 @@
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       if (!el) continue;
-      const raw = (el.textContent || '').replace(/,/g, '').replace(/[^\d.]/g, '');
-      const parsed = parseFloat(raw);
+      const raw = (el.textContent || '').replace(/,/g, '');
+      const match = raw.match(/(\d+(\.\d+)?)/);
+      const parsed = match ? parseFloat(match[1]) : NaN;
       if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
     }
     return 0;
@@ -227,7 +228,7 @@
 
         if (winCount >= WIN_LIMIT_STOP) {
           addHackerLog('2 WINS REACHED - CHANGING SEED & REFRESHING...');
-          const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles') || '0', 10) || 0;
+          const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles') || '0', 10);
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) {
             stopBot('MAX AUTO-RELOAD CYCLES REACHED');
             return;
