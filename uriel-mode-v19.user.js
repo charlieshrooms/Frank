@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         BetFury Dice Bot - Uriel Mode V19 (ULTRA REFRESH, Hardened)
-// @version      19.1
-// @description  Ratio 0.01/80 | Seed Auto-Refresh after 2 Wins | Hacker UI | 32.67%
+// @name         BetFury Dice Bot - Uriel Mode V19 (ULTRA REFRESH, Presets)
+// @version      19.2
+// @description  Uriel V19 with SAFE/BALANCED/AGGRESSIVE presets + auto seed refresh
 // @match        https://betfury.io/casino/games/dice
 // @match        https://betfury.io/*/casino/games/dice*
 // @grant        none
@@ -12,11 +12,31 @@
   'use strict';
 
   // ==================== CONFIGURATION ====================
-  const BET_RATIO = 0.000125; // Base bet = 0.01 on 80 balance
-  const TARGET_CHANCE = 32.67; // Fixed win chance
-  const LOSS_INCREASE = 1.5; // Multiply bet by 1.5 after loss
-  const LOSSES_BEFORE_DIRECTION_SWITCH = 3; // Switch Over/Under after 3 losses
-  const WINS_BEFORE_SEED_REFRESH = 2; // Refresh + new seed after 2 wins
+  const PRESET_STORAGE_KEY = 'bot_preset_mode_v19';
+  const PRESETS = {
+    safe: {
+      betRatio: 0.00008,
+      targetChance: 40.0,
+      lossIncrease: 1.35,
+      lossesBeforeDirectionSwitch: 4,
+      winsBeforeSeedRefresh: 3,
+    },
+    balanced: {
+      betRatio: 0.000125,
+      targetChance: 32.67,
+      lossIncrease: 1.5,
+      lossesBeforeDirectionSwitch: 3,
+      winsBeforeSeedRefresh: 2,
+    },
+    aggressive: {
+      betRatio: 0.0002,
+      targetChance: 28.0,
+      lossIncrease: 1.65,
+      lossesBeforeDirectionSwitch: 2,
+      winsBeforeSeedRefresh: 2,
+    },
+  };
+  const DEFAULT_PRESET_NAME = 'balanced';
 
   // Hardening guards
   const MAX_BET_PERCENT_OF_BALANCE = 0.03; // never bet above 3% of current balance
@@ -37,11 +57,50 @@
   let currentBet = 0;
   let lastBalance = 0;
   let currentDirection = 'under';
+  let activePresetName = DEFAULT_PRESET_NAME;
+  let BET_RATIO = PRESETS[DEFAULT_PRESET_NAME].betRatio;
+  let TARGET_CHANCE = PRESETS[DEFAULT_PRESET_NAME].targetChance;
+  let LOSS_INCREASE = PRESETS[DEFAULT_PRESET_NAME].lossIncrease;
+  let LOSSES_BEFORE_DIRECTION_SWITCH = PRESETS[DEFAULT_PRESET_NAME].lossesBeforeDirectionSwitch;
+  let WINS_BEFORE_SEED_REFRESH = PRESETS[DEFAULT_PRESET_NAME].winsBeforeSeedRefresh;
   let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10);
   if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
+  activePresetName = getStoredPresetName();
+  applyPreset(activePresetName, { persist: false, log: false });
 
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+  function getStoredPresetName() {
+    const raw = String(localStorage.getItem(PRESET_STORAGE_KEY) || '').toLowerCase();
+    return Object.prototype.hasOwnProperty.call(PRESETS, raw) ? raw : DEFAULT_PRESET_NAME;
+  }
+
+  function updateConfigUi() {
+    const presetLabel = document.getElementById('preset-name');
+    const chanceLabel = document.getElementById('chance-val');
+    const refreshLabel = document.getElementById('refresh-wins-val');
+    if (presetLabel) presetLabel.textContent = activePresetName.toUpperCase();
+    if (chanceLabel) chanceLabel.textContent = `${TARGET_CHANCE}%`;
+    if (refreshLabel) refreshLabel.textContent = String(WINS_BEFORE_SEED_REFRESH);
+  }
+
+  function applyPreset(presetName, options = { persist: true, log: true }) {
+    const validName = Object.prototype.hasOwnProperty.call(PRESETS, presetName)
+      ? presetName
+      : DEFAULT_PRESET_NAME;
+    const preset = PRESETS[validName];
+    activePresetName = validName;
+    BET_RATIO = preset.betRatio;
+    TARGET_CHANCE = preset.targetChance;
+    LOSS_INCREASE = preset.lossIncrease;
+    LOSSES_BEFORE_DIRECTION_SWITCH = preset.lossesBeforeDirectionSwitch;
+    WINS_BEFORE_SEED_REFRESH = preset.winsBeforeSeedRefresh;
+
+    if (options.persist) localStorage.setItem(PRESET_STORAGE_KEY, activePresetName);
+    updateConfigUi();
+    if (options.log) addHackerLog(`PRESET APPLIED: ${activePresetName.toUpperCase()}`);
   }
 
   function getBalance() {
@@ -344,11 +403,34 @@
       'position:fixed;bottom:20px;right:20px;z-index:10000;background:#000;border:2px solid #f00;padding:15px;width:260px;font-family:monospace;box-shadow:0 0 20px rgba(255,0,0,0.4);';
     rightTerm.innerHTML = `
       <div id="bal-d" style="color:#f00;font-size:15px;margin-bottom:5px;font-weight:bold;text-shadow:0 0 5px #f00;">BAL: 0.00000000</div>
-      <div style="color:#666;font-size:10px;margin-bottom:15px;">REFRESH EVERY ${WINS_BEFORE_SEED_REFRESH} WINS<br>CHANCE: ${TARGET_CHANCE}%</div>
+      <div style="color:#666;font-size:10px;margin-bottom:10px;">PRESET: <span id="preset-name">${activePresetName.toUpperCase()}</span><br>REFRESH EVERY <span id="refresh-wins-val">${WINS_BEFORE_SEED_REFRESH}</span> WINS<br>CHANCE: <span id="chance-val">${TARGET_CHANCE}%</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <select id="preset-select" style="flex:1;background:#101820;border:1px solid #244;color:#9cf;padding:6px;font-size:11px;">
+          <option value="safe">SAFE</option>
+          <option value="balanced">BALANCED</option>
+          <option value="aggressive">AGGRESSIVE</option>
+        </select>
+        <button id="apply-preset-btn" style="background:transparent;border:1px solid #09f;color:#9cf;padding:6px 8px;cursor:pointer;font-size:11px;">APPLY</button>
+      </div>
       <button id="main-btn" style="width:100%;background:transparent;border:1px solid #0f0;color:#0f0;padding:12px;cursor:pointer;font-weight:bold;text-transform:uppercase;">START BOT</button>
     `;
     document.body.appendChild(rightTerm);
     updateSeedUi();
+    updateConfigUi();
+
+    const presetSelect = document.getElementById('preset-select');
+    const presetApplyBtn = document.getElementById('apply-preset-btn');
+    if (presetSelect) presetSelect.value = activePresetName;
+    if (presetApplyBtn) {
+      presetApplyBtn.onclick = () => {
+        if (isRunning) {
+          addHackerLog('STOP BOT BEFORE CHANGING PRESET');
+          return;
+        }
+        const selected = presetSelect ? presetSelect.value : DEFAULT_PRESET_NAME;
+        applyPreset(selected, { persist: true, log: true });
+      };
+    }
 
     document.getElementById('main-btn').onclick = () => {
       if (isRunning) {

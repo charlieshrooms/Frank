@@ -8,11 +8,19 @@ This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extr
 
 ## Uriel V19 Strategy Profile
 
-- **Bet ratio:** `0.000125` (0.01 on 80 balance)
-- **Chance:** `32.67%`
-- **After loss:** multiply bet by `1.5`
-- **Direction switch:** every `3` consecutive losses
-- **Win trigger:** after `2` wins → auto seed change + page refresh + autorun
+- **Default preset:** `BALANCED`
+- Presets are now selectable in the bot UI:
+  - **SAFE** → lower ratio, gentler progression, slower pace
+  - **BALANCED** → your current V19 baseline behavior
+  - **AGGRESSIVE** → higher ratio and progression for faster swings
+
+### Preset Values
+
+| Preset | Bet Ratio | Chance | Loss Increase | Direction Switch | Seed Refresh |
+|---|---:|---:|---:|---:|---:|
+| SAFE | `0.00008` | `40.0%` | `1.35x` | every `4` losses | every `3` wins |
+| BALANCED | `0.000125` | `32.67%` | `1.5x` | every `3` losses | every `2` wins |
+| AGGRESSIVE | `0.0002` | `28.0%` | `1.65x` | every `2` losses | every `2` wins |
 
 ## Hardening Added
 
@@ -31,6 +39,15 @@ This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extr
 4. Save and open Betfury dice page:
    - `https://betfury.io/casino/games/dice`
 5. Wait for the overlay panel and press **START BOT**.
+
+## Switching Presets
+
+1. Stop the bot if it is running.
+2. Choose **SAFE / BALANCED / AGGRESSIVE** from the preset dropdown.
+3. Press **APPLY**.
+4. Start bot again.
+
+The selected preset is saved in browser localStorage and reused after refresh.
 
 ## Notes
 
