@@ -446,11 +446,28 @@
       if (b) b.innerText = `BAL: ${getBalance().toFixed(8)}`;
     }, 1000);
 
-    if (localStorage.getItem('bot_auto_run') === 'true') {
-      localStorage.setItem('bot_auto_run', 'false');
+  }
+
+  // Read the auto-run flag immediately at script init, before the SPA can wipe
+  // the DOM and cause drawUI to miss it on a re-injection attempt.
+  let pendingAutoRun = localStorage.getItem('bot_auto_run') === 'true';
+  if (pendingAutoRun) localStorage.setItem('bot_auto_run', 'false');
+
+  function tryInit() {
+    drawUI();
+    if (pendingAutoRun && !isRunning) {
+      pendingAutoRun = false;
       setTimeout(runBot, AUTO_RUN_DELAY_MS);
     }
   }
 
-  setTimeout(drawUI, 4000);
+  // Initial draw after a short delay to let the page mount.
+  setTimeout(tryInit, 3000);
+
+  // Persistent guard: if the SPA re-renders and wipes the HUD, re-inject it.
+  setInterval(() => {
+    if (!document.getElementById('main-btn')) {
+      tryInit();
+    }
+  }, 2000);
 })();
