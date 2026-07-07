@@ -403,7 +403,7 @@
       'position:fixed;bottom:20px;right:20px;z-index:10000;background:#000;border:2px solid #f00;padding:15px;width:260px;font-family:monospace;box-shadow:0 0 20px rgba(255,0,0,0.4);';
     rightTerm.innerHTML = `
       <div id="bal-d" style="color:#f00;font-size:15px;margin-bottom:5px;font-weight:bold;text-shadow:0 0 5px #f00;">BAL: 0.00000000</div>
-      <div style="color:#666;font-size:10px;margin-bottom:10px;">PRESET: <span id="preset-name">${activePresetName.toUpperCase()}</span><br>REFRESH EVERY <span id="refresh-wins-val">${WINS_BEFORE_SEED_REFRESH}</span> WINS<br>CHANCE: <span id="chance-val">${TARGET_CHANCE}%</span></div>
+      <div style="color:#666;font-size:10px;margin-bottom:10px;">PRESET: <span id="preset-name">BALANCED</span><br>REFRESH EVERY <span id="refresh-wins-val">2</span> WINS<br>CHANCE: <span id="chance-val">32.67%</span></div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
         <select id="preset-select" style="flex:1;background:#101820;border:1px solid #244;color:#9cf;padding:6px;font-size:11px;">
           <option value="safe">SAFE</option>

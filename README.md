@@ -47,7 +47,7 @@ This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extr
 3. Press **APPLY**.
 4. Start bot again.
 
-The selected preset is saved in browser localStorage and reused after refresh.
+The selected preset is saved in browser localStorage and restored after refresh.
 
 ## Notes
 
