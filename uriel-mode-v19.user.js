@@ -360,6 +360,7 @@
           localStorage.setItem('bot_auto_reload_cycles', String(cycles + 1));
           localStorage.setItem('bot_auto_run', 'true');
           await changeSeed();
+          releaseRunLock();
           location.reload();
           return;
         }
@@ -470,4 +471,6 @@
       tryInit();
     }
   }, 2000);
+
+  window.addEventListener('beforeunload', releaseRunLock);
 })();
