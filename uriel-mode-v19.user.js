@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BetFury Dice Bot - Uriel Mode V19 (ULTRA REFRESH, Hardened)
 // @version      19.1
-// @description  Ratio 0.01/80 | Seed Auto-Switch after 2 Wins | Hacker UI | 32.67%
+// @description  Ratio 0.01/80 | Seed Auto-Refresh after 2 Wins | Hacker UI | 32.67%
 // @match        https://betfury.io/casino/games/dice
 // @match        https://betfury.io/*/casino/games/dice*
 // @grant        none
@@ -52,7 +52,7 @@
       const el = document.querySelector(sel);
       if (!el) continue;
       const raw = (el.textContent || '').replace(/,/g, '');
-      const match = raw.match(/(\d+(\.\d+)?)/);
+      const match = raw.match(/(\d+(?:\.\d+)?)/);
       const parsed = match ? parseFloat(match[1]) : NaN;
       if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
     }
@@ -191,7 +191,14 @@
   }
 
   function getRollButton() {
-    return document.querySelector('button[type="submit"], .dice__roll button, .bet-button button');
+    const candidates = Array.from(
+      document.querySelectorAll('button[type="submit"], .dice__roll button, .bet-button button')
+    );
+    return (
+      candidates.find((btn) => /roll|bet|start/i.test((btn.textContent || '').trim())) ||
+      candidates[0] ||
+      null
+    );
   }
 
   async function runBot() {
@@ -285,7 +292,7 @@
       'position:fixed;bottom:20px;right:20px;z-index:10000;background:#000;border:2px solid #f00;padding:15px;width:260px;font-family:monospace;box-shadow:0 0 20px rgba(255,0,0,0.4);';
     rightTerm.innerHTML = `
       <div id="bal-d" style="color:#f00;font-size:15px;margin-bottom:5px;font-weight:bold;text-shadow:0 0 5px #f00;">BAL: 0.00000000</div>
-      <div style="color:#666;font-size:10px;margin-bottom:15px;">REFRESH EVERY 2 WINS<br>CHANCE: 32.67%</div>
+      <div style="color:#666;font-size:10px;margin-bottom:15px;">REFRESH EVERY ${WINS_BEFORE_SEED_REFRESH} WINS<br>CHANCE: ${TARGET_CHANCE}%</div>
       <button id="main-btn" style="width:100%;background:transparent;border:1px solid #0f0;color:#0f0;padding:12px;cursor:pointer;font-weight:bold;text-transform:uppercase;">START BOT</button>
     `;
     document.body.appendChild(rightTerm);
@@ -295,6 +302,7 @@
       if (isRunning) {
         stopBot('MANUAL STOP');
       } else {
+        localStorage.setItem('bot_auto_reload_cycles', '0');
         runBot();
       }
     };
