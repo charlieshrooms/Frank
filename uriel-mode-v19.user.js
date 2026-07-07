@@ -15,8 +15,8 @@
   const BET_RATIO = 0.000125; // Base bet = 0.01 on 80 balance
   const TARGET_CHANCE = 32.67; // Fixed win chance
   const LOSS_INCREASE = 1.5; // Multiply bet by 1.5 after loss
-  const SWITCH_LIMIT = 3; // Switch Over/Under after 3 losses
-  const WIN_LIMIT_STOP = 2; // Refresh + new seed after 2 wins
+  const LOSSES_BEFORE_DIRECTION_SWITCH = 3; // Switch Over/Under after 3 losses
+  const WINS_BEFORE_SEED_REFRESH = 2; // Refresh + new seed after 2 wins
 
   // Hardening guards
   const MAX_BET_PERCENT_OF_BALANCE = 0.03; // never bet above 3% of current balance
@@ -26,6 +26,7 @@
   const ROLL_SETTLE_MS = 2600;
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
+  const AMOUNT_INPUT_SELECTOR = '.amount__center input, input[type="text"], input[type="number"]';
 
   let isRunning = false;
   let winCount = 0;
@@ -59,7 +60,7 @@
   }
 
   function getCurrentInputBet() {
-    const amountInput = document.querySelector('.amount__center input, input[type="text"], input[type="number"]');
+    const amountInput = document.querySelector(AMOUNT_INPUT_SELECTOR);
     if (!amountInput) return MIN_BET_FALLBACK;
     const parsed = parseFloat((amountInput.value || '').replace(/,/g, ''));
     return Number.isFinite(parsed) && parsed > 0 ? parsed : MIN_BET_FALLBACK;
@@ -158,7 +159,7 @@
     const balance = getBalance();
     currentBet = getSafeBet(currentBet, balance);
 
-    const amountInput = document.querySelector('.amount__center input, input[type="text"], input[type="number"]');
+    const amountInput = document.querySelector(AMOUNT_INPUT_SELECTOR);
     if (amountInput) setInputValue(amountInput, currentBet.toFixed(8));
 
     const sliderEl = document.querySelector('.noUi-target');
@@ -229,9 +230,9 @@
         winCount += 1;
         lossCount = 0;
         currentBet = getSafeBet(Math.max(newBal * BET_RATIO, MIN_BET_FALLBACK), newBal);
-        addHackerLog(`WIN! [${winCount}/${WIN_LIMIT_STOP}]`);
+        addHackerLog(`WIN! [${winCount}/${WINS_BEFORE_SEED_REFRESH}]`);
 
-        if (winCount >= WIN_LIMIT_STOP) {
+        if (winCount >= WINS_BEFORE_SEED_REFRESH) {
           addHackerLog('2 WINS REACHED - CHANGING SEED & REFRESHING...');
           const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10) || 0;
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) {
@@ -248,9 +249,9 @@
         winCount = 0;
         lossCount += 1;
         currentBet *= LOSS_INCREASE;
-        addHackerLog(`LOSS STREAK: [${lossCount}/${SWITCH_LIMIT}]`);
+        addHackerLog(`LOSS STREAK: [${lossCount}/${LOSSES_BEFORE_DIRECTION_SWITCH}]`);
 
-        if (lossCount % SWITCH_LIMIT === 0) toggleDirection();
+        if (lossCount % LOSSES_BEFORE_DIRECTION_SWITCH === 0) toggleDirection();
         if (lossCount >= MAX_CONSECUTIVE_LOSSES_STOP) {
           stopBot(`MAX LOSS STREAK ${MAX_CONSECUTIVE_LOSSES_STOP}`);
           return;
