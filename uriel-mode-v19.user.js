@@ -33,7 +33,7 @@
   let currentBet = 0;
   let lastBalance = 0;
   let currentDirection = 'under';
-  let seedCounter = parseInt(localStorage.getItem('bot_seed_total') || '0', 10);
+  let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10) || 0;
 
   function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
@@ -63,6 +63,13 @@
     if (!amountInput) return MIN_BET_FALLBACK;
     const parsed = parseFloat((amountInput.value || '').replace(/,/g, ''));
     return Number.isFinite(parsed) && parsed > 0 ? parsed : MIN_BET_FALLBACK;
+  }
+
+  function getSafeBet(proposedBet, balance) {
+    const minBet = getCurrentInputBet();
+    const maxBetCap = balance * MAX_BET_PERCENT_OF_BALANCE;
+    if (maxBetCap > minBet) return Math.min(Math.max(proposedBet, minBet), maxBetCap);
+    return minBet;
   }
 
   function addHackerLog(msg) {
@@ -149,9 +156,7 @@
 
   function applyDiceStrategy() {
     const balance = getBalance();
-    const minBet = getCurrentInputBet();
-    const maxAllowed = Math.max(minBet, balance * MAX_BET_PERCENT_OF_BALANCE);
-    currentBet = Math.min(Math.max(currentBet, minBet), maxAllowed);
+    currentBet = getSafeBet(currentBet, balance);
 
     const amountInput = document.querySelector('.amount__center input, input[type="text"], input[type="number"]');
     if (amountInput) setInputValue(amountInput, currentBet.toFixed(8));
@@ -193,7 +198,7 @@
     winCount = 0;
     lossCount = 0;
     lastBalance = getBalance();
-    currentBet = Math.max(lastBalance * BET_RATIO, getCurrentInputBet(), MIN_BET_FALLBACK);
+    currentBet = getSafeBet(Math.max(lastBalance * BET_RATIO, MIN_BET_FALLBACK), lastBalance);
 
     const mainBtn = document.getElementById('main-btn');
     if (mainBtn) {
@@ -223,12 +228,12 @@
       if (newBal > lastBalance) {
         winCount += 1;
         lossCount = 0;
-        currentBet = Math.max(newBal * BET_RATIO, getCurrentInputBet(), MIN_BET_FALLBACK);
+        currentBet = getSafeBet(Math.max(newBal * BET_RATIO, MIN_BET_FALLBACK), newBal);
         addHackerLog(`WIN! [${winCount}/${WIN_LIMIT_STOP}]`);
 
         if (winCount >= WIN_LIMIT_STOP) {
           addHackerLog('2 WINS REACHED - CHANGING SEED & REFRESHING...');
-          const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles') || '0', 10);
+          const cycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10) || 0;
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) {
             stopBot('MAX AUTO-RELOAD CYCLES REACHED');
             return;
@@ -269,7 +274,7 @@
       <div style="color:#0f0;font-weight:bold;border-bottom:1px solid #0f0;margin-bottom:10px;font-size:12px;text-shadow:0 0 5px #0f0;">> INTRUSION CONSOLE V19.1</div>
       <div id="hacker-stream" style="height:320px;overflow:hidden;color:#0f0;"></div>
       <div style="border-top:1px solid #0f0;margin-top:8px;font-size:11px;color:#fff;">
-        TOTAL SEEDS CHANGED: <span id="seed-count-val" style="color:#0f0;font-weight:bold;">${seedCounter}</span>
+        TOTAL SEEDS CHANGED: <span id="seed-count-val" style="color:#0f0;font-weight:bold;">0</span>
       </div>
     `;
     document.body.appendChild(leftTerm);
@@ -283,6 +288,7 @@
       <button id="main-btn" style="width:100%;background:transparent;border:1px solid #0f0;color:#0f0;padding:12px;cursor:pointer;font-weight:bold;text-transform:uppercase;">START BOT</button>
     `;
     document.body.appendChild(rightTerm);
+    updateSeedUi();
 
     document.getElementById('main-btn').onclick = () => {
       if (isRunning) {
