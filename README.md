@@ -1,51 +1,37 @@
 # Frank — Betfury Dice Bot
 
-Automated dice strategies for [Betfury.com](https://betfury.com).
+This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extra hardening for selector drift, mobile reliability, and runaway bet protection.
 
----
+## Main Script
 
-## 🪂 The Parachute Strategy
+- [`uriel-mode-v19.user.js`](./uriel-mode-v19.user.js)
 
-**Core concept:** When winning → stay conservative and bank gains. When losing → automatically switch to high win-chance survival mode to tread water. Reset and repeat forever.
+## Uriel V19 Strategy Profile
 
-### Initial Setup (before starting autobet)
+- **Bet ratio:** `0.000125` (0.01 on 80 balance)
+- **Chance:** `32.67%`
+- **After loss:** multiply bet by `1.5`
+- **Direction switch:** every `3` consecutive losses
+- **Win trigger:** after `2` wins → auto seed change + page refresh + autorun
 
-| Setting | Value |
-|---|---|
-| Bet Amount | Minimum possible |
-| Win Chance | 49% |
-| Direction | Roll Under |
+## Hardening Added
 
-### Bankroll Rules
+- Max bet clamp (`3%` of current balance)
+- Hard stop on deep loss streak (`18`)
+- Better button/input selectors for UI updates
+- Seed counter UI sync + reload cycle cap
+- Manual stop without forced page reload
 
-- Fund your session with at least **50× your base bet**
-- **Hard stop:** if your balance drops below **20× base bet**, stop for the day
+## Install
 
----
+1. Install Tampermonkey (or Violentmonkey) in your browser.
+2. Create a new userscript.
+3. Paste contents of `uriel-mode-v19.user.js`.
+4. Save and open Betfury dice page:
+   - `https://betfury.io/casino/games/dice`
+5. Wait for the overlay panel and press **START BOT**.
 
-### Conditions — Enter in This Exact Order (top-down matters)
+## Notes
 
-| # | ON | DO |
-|---|---|---|
-| 1 | Every **1** Win | **Reset bet amount** |
-| 2 | Every **1** Loss | **Increase bet amount by 40%** |
-| 3 | Every **4** Losses | **Set win chance → 72%** |
-| 4 | Every **4** Wins | **Reset win chance** |
-| 5 | Every **4** Wins | **Reset bet amount** |
-| 6 | Every **15** Losses | **Stop autobet** |
-
----
-
-### How It Works
-
-1. **Condition 1** fires first on every win — immediately kills any inflated bet from a losing streak, locking in the small recovery.
-2. **Condition 2** is a soft martingale — 40% increases instead of 100%, so your bankroll survives much longer during streaks.
-3. **Condition 3** is the parachute — after 4 straight losses, win chance jumps to 72%. You now win ~3 of every 4 bets (small payouts) instead of bleeding fast.
-4. **Conditions 4 & 5** fire together after 4 wins in survival mode — fully resets both win chance and bet amount back to base. Clean slate.
-5. **Condition 6** is the hard floor — if losses go 15 deep with no recovery at all, the bot stops itself so you don't wake up broke.
-
-### The Key Insight
-
-> At 72% win chance you win 3 of 4 bets. This isn't recovery — it's **stalling** until the bet resets, then starting fresh. You trade big wins for survival.
-
-The full strategy config is in [`parachute-strategy.json`](./parachute-strategy.json).
+- Script behavior depends on Betfury DOM and can break after site updates.
+- `parachute-strategy.json` is kept as legacy config reference.
