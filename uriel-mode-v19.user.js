@@ -46,6 +46,11 @@
   const ROLL_SETTLE_MS = 2600;
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
+  const STORAGE = {
+    autoRun: 'bot_auto_run_v19',
+    autoReloadCycles: 'bot_auto_reload_cycles_v19',
+    seedTotal: 'bot_seed_total_v19',
+  };
   const AMOUNT_INPUT_SELECTOR = '.amount__center input, input[type="text"], input[type="number"]';
   const RUN_LOCK_KEY = 'bot_run_lock_v19';
   const RUN_LOCK_TIMEOUT_MS = 15000;
@@ -62,7 +67,7 @@
   let LOSS_INCREASE = PRESETS[DEFAULT_PRESET_NAME].lossIncrease;
   let LOSSES_BEFORE_DIRECTION_SWITCH = PRESETS[DEFAULT_PRESET_NAME].lossesBeforeDirectionSwitch;
   let WINS_BEFORE_SEED_REFRESH = PRESETS[DEFAULT_PRESET_NAME].winsBeforeSeedRefresh;
-  let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10);
+  let seedCounter = parseInt(localStorage.getItem(STORAGE.seedTotal), 10);
   if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
   activePresetName = getStoredPresetName();
   applyPreset(activePresetName, { persist: false, log: false });
@@ -244,7 +249,7 @@
 
       updateBtn.click();
       seedCounter += 1;
-      localStorage.setItem('bot_seed_total', String(seedCounter));
+      localStorage.setItem(STORAGE.seedTotal, String(seedCounter));
       updateSeedUi();
       addHackerLog('SEED CHANGED SUCCESSFULLY');
 
@@ -370,7 +375,7 @@
 
         if (winCount >= WINS_BEFORE_SEED_REFRESH) {
           addHackerLog(`${WINS_BEFORE_SEED_REFRESH} WINS REACHED - CHANGING SEED & REFRESHING...`);
-          const rawCycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10);
+          const rawCycles = parseInt(localStorage.getItem(STORAGE.autoReloadCycles), 10);
           const cycles = Number.isInteger(rawCycles)
             ? Math.max(0, Math.min(rawCycles, MAX_AUTO_RELOAD_CYCLES))
             : 0;
@@ -378,8 +383,8 @@
             stopBot('MAX AUTO-RELOAD CYCLES REACHED');
             return;
           }
-          localStorage.setItem('bot_auto_reload_cycles', String(cycles + 1));
-          localStorage.setItem('bot_auto_run', 'true');
+          localStorage.setItem(STORAGE.autoReloadCycles, String(cycles + 1));
+          localStorage.setItem(STORAGE.autoRun, 'true');
           await changeSeed();
           releaseRunLock();
           location.reload();
@@ -458,7 +463,7 @@
       if (isRunning) {
         stopBot('MANUAL STOP');
       } else {
-        localStorage.setItem('bot_auto_reload_cycles', '0');
+        localStorage.setItem(STORAGE.autoReloadCycles, '0');
         runBot();
       }
     };
@@ -472,8 +477,8 @@
 
   // Read the auto-run flag immediately at script init, before the SPA can wipe
   // the DOM and cause drawUI to miss it on a re-injection attempt.
-  let pendingAutoRun = localStorage.getItem('bot_auto_run') === 'true';
-  if (pendingAutoRun) localStorage.setItem('bot_auto_run', 'false');
+  let pendingAutoRun = localStorage.getItem(STORAGE.autoRun) === 'true';
+  if (pendingAutoRun) localStorage.setItem(STORAGE.autoRun, 'false');
 
   function tryInit() {
     drawUI();

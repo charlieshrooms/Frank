@@ -94,7 +94,7 @@
   const INSTANCE_ID = createInstanceId();
 
   const storedSeedTotal = localStorage.getItem(STORAGE.seedTotal);
-  let seedCounter = storedSeedTotal === null ? 0 : parseInt(storedSeedTotal, 10);
+  let seedCounter = parseInt(storedSeedTotal, 10);
   if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
 
   function sleep(ms) {
@@ -123,7 +123,7 @@
   function getSafeBet(proposed, balance) {
     const minBet = getCurrentInputMin();
     const maxBetCap = balance * STRATEGY.maxBetPercentOfBalance;
-    if (maxBetCap < minBet) return 0;
+    if (maxBetCap < minBet) return balance >= minBet ? minBet : 0;
     return Math.min(Math.max(proposed, minBet), maxBetCap);
   }
 

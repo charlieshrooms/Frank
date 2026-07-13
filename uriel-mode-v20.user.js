@@ -54,6 +54,11 @@
   const ROLL_SETTLE_MS = 2600;
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
+  const STORAGE = {
+    autoRun: 'bot_auto_run_v20',
+    autoReloadCycles: 'bot_auto_reload_cycles_v20',
+    seedTotal: 'bot_seed_total_v20',
+  };
   const RUN_LOCK_KEY = 'bot_run_lock_v20';
   const RUN_LOCK_TIMEOUT_MS = 15000;
 
@@ -83,7 +88,7 @@
   let activePresetName = getStoredPresetName();
   let preset = PRESETS[activePresetName];
 
-  let seedCounter = parseInt(localStorage.getItem('bot_seed_total'), 10);
+  let seedCounter = parseInt(localStorage.getItem(STORAGE.seedTotal), 10);
   if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
 
   function createInstanceId() {
@@ -252,7 +257,7 @@
 
       updateBtn.click();
       seedCounter += 1;
-      localStorage.setItem('bot_seed_total', String(seedCounter));
+      localStorage.setItem(STORAGE.seedTotal, String(seedCounter));
       addLog('SEED CHANGED SUCCESSFULLY');
 
       await sleep(1000);
@@ -354,11 +359,11 @@
         updateStatsUi();
 
         if (winCount >= preset.winsBeforeSeedRefresh) {
-          const rawCycles = parseInt(localStorage.getItem('bot_auto_reload_cycles'), 10);
+          const rawCycles = parseInt(localStorage.getItem(STORAGE.autoReloadCycles), 10);
           const cycles = Number.isInteger(rawCycles) ? Math.max(0, Math.min(rawCycles, MAX_AUTO_RELOAD_CYCLES)) : 0;
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) { stopBot('MAX RELOAD CYCLES REACHED'); return; }
-          localStorage.setItem('bot_auto_reload_cycles', String(cycles + 1));
-          localStorage.setItem('bot_auto_run', 'true');
+          localStorage.setItem(STORAGE.autoReloadCycles, String(cycles + 1));
+          localStorage.setItem(STORAGE.autoRun, 'true');
           addLog(`${preset.winsBeforeSeedRefresh} WINS — REFRESHING SEED...`);
           await changeSeed();
           releaseRunLock();
@@ -434,7 +439,7 @@
       if (isRunning) {
         stopBot('MANUAL STOP');
       } else {
-        localStorage.setItem('bot_auto_reload_cycles', '0');
+        localStorage.setItem(STORAGE.autoReloadCycles, '0');
         runBot();
       }
     };
@@ -446,8 +451,8 @@
 
   // ==================== INIT ====================
   // Read auto-run flag immediately before SPA can wipe DOM state
-  let pendingAutoRun = localStorage.getItem('bot_auto_run') === 'true';
-  if (pendingAutoRun) localStorage.setItem('bot_auto_run', 'false');
+  let pendingAutoRun = localStorage.getItem(STORAGE.autoRun) === 'true';
+  if (pendingAutoRun) localStorage.setItem(STORAGE.autoRun, 'false');
 
   applyPreset(activePresetName, { persist: false, log: false });
 
