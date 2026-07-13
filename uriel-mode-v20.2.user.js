@@ -59,6 +59,7 @@
     autoRun: 'bot_auto_run_v20',
     autoReloadCycles: 'bot_auto_reload_cycles_v20',
     seedTotal: 'bot_seed_total_v20',
+    startBet: 'bot_start_bet_v20',
   };
   const RUN_LOCK_KEY = 'bot_run_lock_v20';
   const RUN_LOCK_TIMEOUT_MS = 15000;
@@ -161,6 +162,13 @@
     if (!Number.isNaN(stepAttr)) return stepAttr;
 
     return MIN_BET_FALLBACK;
+  }
+
+  function getStartingBet(balance) {
+    const raw = localStorage.getItem(STORAGE.startBet);
+    const parsed = parseFloat(String(raw || '').replace(/,/g, '').trim());
+    if (Number.isFinite(parsed) && parsed > 0) return getSafeBet(parsed, balance);
+    return getSafeBet(balance * preset.betRatio, balance);
   }
 
   function getSafeBet(proposed, balance) {
@@ -340,7 +348,7 @@
     winCount = 0;
     lossCount = 0;
     lastBalance = getBalance();
-    currentBet = getSafeBet(lastBalance * preset.betRatio, lastBalance);
+    currentBet = getStartingBet(lastBalance);
     if (currentBet <= 0) { stopBot('BALANCE TOO LOW'); return; }
 
     setBotButtonState(true);
@@ -433,6 +441,12 @@
         <button data-v20preset="aggressive" style="padding:5px 2px;background:#330000;border:1px solid #900;color:#f00;cursor:pointer;font-size:10px;font-family:monospace;">AGGRO</button>
       </div>
 
+      <div style="margin-bottom:8px;">
+        <label style="color:#aaa;font-size:9px;display:block;margin-bottom:3px;">START BET (leave blank = auto)</label>
+        <input id="v20-start-bet" type="text" inputmode="decimal" placeholder="e.g. 0.00000010"
+          style="width:100%;box-sizing:border-box;background:#111;border:1px solid #0f0;color:#0f0;font-family:monospace;font-size:11px;padding:5px 6px;outline:none;" />
+      </div>
+
       <div style="font-size:10px;color:#666;margin-bottom:8px;line-height:1.6;">
         PRESET: <span id="v20-preset-label" style="color:#9cf;">BALANCED</span><br>
         CHANCE: <span id="v20-chance-val" style="color:#9cf;">32.67%</span> &nbsp;|&nbsp;
@@ -464,6 +478,19 @@
     };
 
     updateStatsUi();
+
+    // Restore persisted starting bet value
+    const startBetInput = document.getElementById('v20-start-bet');
+    if (startBetInput) {
+      const stored = localStorage.getItem(STORAGE.startBet);
+      if (stored) startBetInput.value = stored;
+      startBetInput.addEventListener('input', () => {
+        const val = startBetInput.value.trim();
+        try { localStorage.setItem(STORAGE.startBet, val || ''); } catch (e) {}
+        addLog(val ? `START BET SET: ${val}` : 'START BET CLEARED (auto mode)');
+      });
+    }
+
     setInterval(updateBalanceUi, 1000);
     setInterval(updateStatsUi, 2000);
   }
