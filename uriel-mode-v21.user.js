@@ -123,7 +123,7 @@
   function getSafeBet(proposed, balance) {
     const minBet = getCurrentInputMin();
     const maxBetCap = balance * STRATEGY.maxBetPercentOfBalance;
-    if (maxBetCap < minBet) return balance >= minBet ? minBet : 0;
+    if (maxBetCap < minBet) return 0;
     return Math.min(Math.max(proposed, minBet), maxBetCap);
   }
 
@@ -154,12 +154,14 @@
   function acquireRunLock() {
     try {
       const raw = localStorage.getItem(STORAGE.runLock);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const ts = Number(parsed?.ts || 0);
-        const id = String(parsed?.id || '');
-        if (id && Date.now() - ts < RUN_LOCK_TIMEOUT_MS && id !== INSTANCE_ID) return false;
+      if (!raw) {
+        localStorage.setItem(STORAGE.runLock, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
+        return true;
       }
+      const parsed = JSON.parse(raw);
+      const ts = Number(parsed?.ts || 0);
+      const id = String(parsed?.id || '');
+      if (id && Date.now() - ts < RUN_LOCK_TIMEOUT_MS && id !== INSTANCE_ID) return false;
       localStorage.setItem(STORAGE.runLock, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
       return true;
     } catch {

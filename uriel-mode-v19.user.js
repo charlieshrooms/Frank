@@ -165,12 +165,14 @@
   function acquireRunLock() {
     try {
       const raw = localStorage.getItem(RUN_LOCK_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const ts = Number(parsed?.ts || 0);
-        const id = String(parsed?.id || '');
-        if (id && Date.now() - ts < RUN_LOCK_TIMEOUT_MS && id !== INSTANCE_ID) return false;
+      if (!raw) {
+        localStorage.setItem(RUN_LOCK_KEY, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
+        return true;
       }
+      const parsed = JSON.parse(raw);
+      const ts = Number(parsed?.ts || 0);
+      const id = String(parsed?.id || '');
+      if (id && Date.now() - ts < RUN_LOCK_TIMEOUT_MS && id !== INSTANCE_ID) return false;
       localStorage.setItem(RUN_LOCK_KEY, JSON.stringify({ id: INSTANCE_ID, ts: Date.now() }));
       return true;
     } catch {
