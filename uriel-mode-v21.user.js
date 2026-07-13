@@ -44,7 +44,10 @@
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
   const RUN_LOCK_TIMEOUT_MS = 15000;
-  const INSTANCE_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const INSTANCE_ID =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
 
   const SEL = {
     balance: [
