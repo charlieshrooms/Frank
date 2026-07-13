@@ -44,10 +44,6 @@
   const AUTO_RUN_DELAY_MS = 5000;
   const MAX_AUTO_RELOAD_CYCLES = 200;
   const RUN_LOCK_TIMEOUT_MS = 15000;
-  const INSTANCE_ID =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
 
   const SEL = {
     balance: [
@@ -75,7 +71,30 @@
   let recoveryWins = 0;
   let recoveryMode = false;
 
-  let seedCounter = parseInt(localStorage.getItem(STORAGE.seedTotal), 10);
+  function createInstanceId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const bytes = new Uint32Array(4);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (value) => value.toString(16).padStart(8, '0')).join('-');
+    }
+
+    const perfNow = typeof performance !== 'undefined' ? performance.now() : 0;
+    let counter = 0;
+    try {
+      const rawCounter = parseInt(localStorage.getItem('bot_instance_counter_v21'), 10);
+      counter = (Number.isInteger(rawCounter) ? rawCounter : 0) + 1;
+      localStorage.setItem('bot_instance_counter_v21', String(counter));
+    } catch {}
+    return `${Date.now().toString(36)}-${Math.floor(perfNow * 1000).toString(36)}-${counter.toString(36)}`;
+  }
+
+  const INSTANCE_ID = createInstanceId();
+
+  const storedSeedTotal = localStorage.getItem(STORAGE.seedTotal);
+  let seedCounter = storedSeedTotal === null ? 0 : parseInt(storedSeedTotal, 10);
   if (!Number.isInteger(seedCounter) || seedCounter < 0) seedCounter = 0;
 
   function sleep(ms) {
