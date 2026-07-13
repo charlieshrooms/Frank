@@ -1,51 +1,43 @@
 # Frank — Betfury Dice Bot
 
-This repo now ships your **Uriel Mode V19 (Ultra Refresh)** userscript with extra hardening for selector drift, mobile reliability, and runaway bet protection.
+## Current Script — V20 (recommended)
 
-## Main Script
+- [`uriel-mode-v20.user.js`](./uriel-mode-v20.user.js)
 
-- [`uriel-mode-v19.user.js`](./uriel-mode-v19.user.js)
+V20 merges all V19 hardening with a cleaner preset structure, per-preset loss streak limits, and a live stats HUD.
 
-## Uriel V19 Strategy Profile
+### V20 Preset Values
 
-- **Default preset:** `BALANCED`
-- Presets are now selectable in the bot UI:
-  - **SAFE** → lower ratio, gentler progression, slower pace
-  - **BALANCED** → your current V19 baseline behavior
-  - **AGGRESSIVE** → higher ratio and progression for faster swings
+| Preset | Bet Ratio | Chance | Loss Increase | Dir Switch | Seed Refresh | Max Loss Streak |
+|---|---:|---:|---:|---:|---:|---:|
+| SAFE | `0.00008` | `40.0%` | `1.35x` | every `4` losses | every `3` wins | `12` |
+| BALANCED | `0.000125` | `32.67%` | `1.5x` | every `3` losses | every `2` wins | `18` |
+| AGGRESSIVE | `0.0002` | `28.0%` | `1.65x` | every `2` losses | every `2` wins | `8` |
 
-### Preset Values
-
-| Preset | Bet Ratio | Chance | Loss Increase | Direction Switch | Seed Refresh |
-|---|---:|---:|---:|---:|---:|
-| SAFE | `0.00008` | `40.0%` | `1.35x` | every `4` losses | every `3` wins |
-| BALANCED | `0.000125` | `32.67%` | `1.5x` | every `3` losses | every `2` wins |
-| AGGRESSIVE | `0.0002` | `28.0%` | `1.65x` | every `2` losses | every `2` wins |
-
-## Hardening Added
+### V20 Features
 
 - Max bet clamp (`3%` of current balance)
-- Hard stop on deep loss streak (`18`)
-- Better button/input selectors for UI updates
-- Seed counter UI sync + reload cycle cap
-- Manual stop without forced page reload
-- If balance is too low to satisfy both site min-bet and safety cap, bot stops instead of forcing a bad bet
+- Per-preset hard stop on loss streak
+- Direction toggle (under ↔ over) on loss threshold
+- Auto seed refresh + page reload cycle with auto-resume
+- Run lock prevents duplicate instances
+- Persistent HUD re-injection if SPA wipes the DOM
+- Live stats: wins, losses, streak, seeds changed, balance
 
 ## Install
 
 1. Install Tampermonkey (or Violentmonkey) in your browser.
 2. Create a new userscript.
-3. Paste contents of `uriel-mode-v19.user.js`.
+3. Paste contents of `uriel-mode-v20.user.js`.
 4. Save and open Betfury dice page:
    - `https://betfury.io/casino/games/dice`
-5. Wait for the overlay panel and press **START BOT**.
+5. Wait ~5 seconds for the HUD panels to appear, then press **START BOT**.
 
 ## Switching Presets
 
 1. Stop the bot if it is running.
-2. Choose **SAFE / BALANCED / AGGRESSIVE** from the preset dropdown.
-3. Press **APPLY**.
-4. Start bot again.
+2. Click **SAFE / BALANCED / AGGRO** in the control panel.
+3. Start bot again.
 
 The selected preset is saved in browser localStorage and restored after refresh.
 
@@ -53,3 +45,4 @@ The selected preset is saved in browser localStorage and restored after refresh.
 
 - Script behavior depends on Betfury DOM and can break after site updates.
 - `parachute-strategy.json` is kept as legacy config reference.
+- `uriel-mode-v19.user.js` is kept for reference.
