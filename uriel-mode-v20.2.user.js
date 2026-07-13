@@ -442,7 +442,7 @@
       </div>
 
       <div style="margin-bottom:8px;">
-        <label style="color:#aaa;font-size:9px;display:block;margin-bottom:3px;">START BET (leave blank = auto)</label>
+        <label for="v20-start-bet" style="color:#aaa;font-size:9px;display:block;margin-bottom:3px;">START BET (leave blank = auto)</label>
         <input id="v20-start-bet" type="text" inputmode="decimal" placeholder="e.g. 0.00000010"
           style="width:100%;box-sizing:border-box;background:#111;border:1px solid #0f0;color:#0f0;font-family:monospace;font-size:11px;padding:5px 6px;outline:none;" />
       </div>
@@ -486,7 +486,7 @@
       if (stored) startBetInput.value = stored;
       startBetInput.addEventListener('input', () => {
         const val = startBetInput.value.trim();
-        try { localStorage.setItem(STORAGE.startBet, val || ''); } catch (e) {}
+        try { localStorage.setItem(STORAGE.startBet, val || ''); } catch (e) { addLog('START BET SAVE ERROR: ' + e.message); }
         addLog(val ? `START BET SET: ${val}` : 'START BET CLEARED (auto mode)');
       });
     }
