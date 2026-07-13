@@ -53,6 +53,7 @@
   const ACTION_DELAY_MS = 700;
   const ROLL_SETTLE_MS = 2600;
   const AUTO_RUN_DELAY_MS = 5200; // longer delay to let SPA/TheFreshMaker settle
+  const RELOAD_DELAY_MS = 1200;   // brief pause before location.reload()
   const MAX_AUTO_RELOAD_CYCLES = 200;
   const STORAGE = {
     autoRun: 'bot_auto_run_v20',
@@ -365,12 +366,17 @@
           const cycles = Number.isInteger(rawCycles) ? Math.max(0, Math.min(rawCycles, MAX_AUTO_RELOAD_CYCLES)) : 0;
           if (cycles >= MAX_AUTO_RELOAD_CYCLES) { stopBot('MAX RELOAD CYCLES REACHED'); return; }
           addLog(`${preset.winsBeforeSeedRefresh} WINS — REFRESHING SEED (cycle ${cycles + 1}/${MAX_AUTO_RELOAD_CYCLES})...`);
-          await changeSeed();
-          localStorage.setItem(STORAGE.autoRun, 'true');
-          localStorage.setItem(STORAGE.autoReloadCycles, String(cycles + 1));
-          releaseRunLock();
-          setTimeout(() => location.reload(), 1200);
-          return;
+          const seedOk = await changeSeed();
+          if (!seedOk) {
+            addLog('SEED CHANGE FAILED — CONTINUING WITHOUT RELOAD');
+            winCount = 0;
+          } else {
+            localStorage.setItem(STORAGE.autoRun, 'true');
+            localStorage.setItem(STORAGE.autoReloadCycles, String(cycles + 1));
+            releaseRunLock();
+            setTimeout(() => location.reload(), RELOAD_DELAY_MS);
+            return;
+          }
         }
       } else if (newBal < lastBalance) {
         winCount = 0;
