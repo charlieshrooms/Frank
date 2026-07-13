@@ -145,11 +145,22 @@
     return 0;
   }
 
+  function parseBetNumber(raw) {
+    const parsed = parseFloat(String(raw || '').replace(/,/g, '').trim());
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : NaN;
+  }
+
   function getCurrentInputMin() {
     const input = document.querySelector(SEL.amountInput);
     if (!input) return MIN_BET_FALLBACK;
-    const parsed = parseFloat((input.value || '').replace(/,/g, ''));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : MIN_BET_FALLBACK;
+
+    const minAttr = parseBetNumber(input.getAttribute('min'));
+    if (!Number.isNaN(minAttr)) return minAttr;
+
+    const stepAttr = parseBetNumber(input.getAttribute('step'));
+    if (!Number.isNaN(stepAttr)) return stepAttr;
+
+    return MIN_BET_FALLBACK;
   }
 
   function getSafeBet(proposed, balance) {
