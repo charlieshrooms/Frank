@@ -34,6 +34,7 @@
   const ROLL_SETTLE_MS = 2600;
   const AUTO_RUN_DELAY_MS = 5000;
   const RUN_LOCK_TIMEOUT_MS = 15000;
+  const DISPLAY_UNIT = 0.00000001;
 
   const SEL = {
     balance: [
@@ -51,6 +52,7 @@
   };
 
   let isRunning = false;
+  let baseBet = STRATEGY.baseBet;
   let currentBet = STRATEGY.baseBet;
   let cycleStartBalance = 0;
   let lastBalance = 0;
@@ -86,6 +88,19 @@
       if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
     }
     return 0;
+  }
+
+  function getUserSelectedBaseBet() {
+    const input = document.querySelector(SEL.amountInput);
+    if (!input) return STRATEGY.baseBet;
+    const parsed = parseFloat((input.value || '').replace(/,/g, ''));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : STRATEGY.baseBet;
+  }
+
+  function getMinEffectiveBet(chance) {
+    const edgeFactor = 99 / chance - 1;
+    if (!Number.isFinite(edgeFactor) || edgeFactor <= 0) return STRATEGY.baseBet;
+    return Math.ceil((DISPLAY_UNIT / edgeFactor) * 1e8) / 1e8;
   }
 
   function setInputValue(input, value) {
@@ -203,7 +218,10 @@
     }
 
     isRunning = true;
-    currentBet = STRATEGY.baseBet;
+    const selectedBaseBet = getUserSelectedBaseBet();
+    const minEffectiveBet = getMinEffectiveBet(STRATEGY.winChance);
+    baseBet = Math.max(selectedBaseBet, STRATEGY.baseBet, minEffectiveBet);
+    currentBet = baseBet;
     lastBalance = getBalance();
     cycleStartBalance = lastBalance;
 
@@ -217,7 +235,10 @@
 
     setBotButtonState(true);
     updateStatsUi();
-    addLog(`BOT STARTED [${STRATEGY.label}] resets=${resetCount}/${STRATEGY.resetsBeforeRefresh}`);
+    if (baseBet > selectedBaseBet) {
+      addLog(`BASE BET ADJUSTED TO ${baseBet.toFixed(8)} FOR 95% MODE`);
+    }
+    addLog(`BOT STARTED [${STRATEGY.label}] base=${baseBet.toFixed(8)} resets=${resetCount}/${STRATEGY.resetsBeforeRefresh}`);
 
     while (isRunning) {
       refreshRunLock();
@@ -273,7 +294,7 @@
           return;
         }
 
-        currentBet = STRATEGY.baseBet;
+        currentBet = baseBet;
         cycleStartBalance = newBal;
         lastBalance = newBal;
         addLog(`CYCLE RESET — new base bal=${cycleStartBalance.toFixed(8)}`);
@@ -307,7 +328,7 @@
         WIN ×<span style="color:#0f0;">${STRATEGY.winMultiplier}</span> &nbsp;LOSS ×<span style="color:#f00;">${STRATEGY.lossMultiplier}</span><br>
         TARGET: <span style="color:#9cf;">+${STRATEGY.profitTarget} LTC / cycle</span><br>
         RESETS: <span id="ltc1-resets-val" style="color:#ff0;">0/${STRATEGY.resetsBeforeRefresh}</span><br>
-        BET: <span id="ltc1-bet-val" style="color:#9cf;">${STRATEGY.baseBet.toFixed(8)}</span><br>
+        BET: <span id="ltc1-bet-val" style="color:#9cf;">${baseBet.toFixed(8)}</span><br>
         PROFIT: <span id="ltc1-profit-val" style="color:#0f0;">0.00000000</span><br>
         W: <span id="ltc1-wins-val" style="color:#0f0;">0</span> &nbsp;L: <span id="ltc1-losses-val" style="color:#f00;">0</span>
       </div>
