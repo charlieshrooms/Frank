@@ -116,8 +116,14 @@
   function getCurrentInputMin() {
     const input = document.querySelector(SEL.amountInput);
     if (!input) return MIN_BET_FALLBACK;
-    const parsed = parseFloat((input.value || '').replace(/,/g, ''));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : MIN_BET_FALLBACK;
+
+    const minAttr = parseFloat((input.getAttribute('min') || '').replace(/,/g, ''));
+    if (Number.isFinite(minAttr) && minAttr > 0) return minAttr;
+
+    const stepAttr = parseFloat((input.getAttribute('step') || '').replace(/,/g, ''));
+    if (Number.isFinite(stepAttr) && stepAttr > 0) return stepAttr;
+
+    return MIN_BET_FALLBACK;
   }
 
   function getSafeBet(proposed, balance) {
