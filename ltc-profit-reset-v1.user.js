@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BetFury Dice Bot - LTC Profit Reset V1
 // @version      1.0
-// @description  LTC only: 90% win chance, ×4 on win, ×6 on loss, reset at 0.0001 profit, refresh after 5 resets
+// @description  LTC only: 95% win chance, ×4 on win, ×6 on loss, reset at 0.0001 profit, refresh after 5 resets
 // @match        https://betfury.io/casino/games/dice
 // @match        https://betfury.io/*/casino/games/dice*
 // @match        https://betfury.com/casino/games/dice
@@ -23,7 +23,7 @@
   const STRATEGY = {
     label: 'LTC PROFIT RESET',
     baseBet: 0.00000002,
-    winChance: 90.0,
+    winChance: 95.0,
     winMultiplier: 4.0,   // bet × 4 on win (increase by 300%)
     lossMultiplier: 6.0,  // bet × 6 on loss (increase by 500%)
     profitTarget: 0.0001, // LTC profit per cycle before reset
