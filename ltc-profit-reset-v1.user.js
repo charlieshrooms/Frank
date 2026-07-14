@@ -35,6 +35,7 @@
   const AUTO_RUN_DELAY_MS = 5000;
   const RUN_LOCK_TIMEOUT_MS = 15000;
   const DISPLAY_UNIT = 0.00000001;
+  const MAX_BET_PERCENT_OF_BALANCE = 0.95;
 
   const SEL = {
     balance: [
@@ -101,6 +102,11 @@
     const edgeFactor = 99 / chance - 1;
     if (!Number.isFinite(edgeFactor) || edgeFactor <= 0) return STRATEGY.baseBet;
     return Math.ceil((DISPLAY_UNIT / edgeFactor) * 1e8) / 1e8;
+  }
+
+  function clampBetToBalance(bet, balance) {
+    const maxBet = Math.max(DISPLAY_UNIT, balance * MAX_BET_PERCENT_OF_BALANCE);
+    return Math.max(DISPLAY_UNIT, Math.min(bet, maxBet));
   }
 
   function setInputValue(input, value) {
@@ -220,8 +226,7 @@
     isRunning = true;
     const selectedBaseBet = getUserSelectedBaseBet();
     const minEffectiveBet = getMinEffectiveBet(STRATEGY.winChance);
-    baseBet = Math.max(selectedBaseBet, STRATEGY.baseBet, minEffectiveBet);
-    currentBet = baseBet;
+    const minAllowedBaseBet = Math.max(STRATEGY.baseBet, minEffectiveBet);
     lastBalance = getBalance();
     cycleStartBalance = lastBalance;
 
@@ -229,6 +234,10 @@
       stopBot('BALANCE TOO LOW');
       return;
     }
+
+    baseBet = selectedBaseBet >= minAllowedBaseBet ? selectedBaseBet : minAllowedBaseBet;
+    baseBet = clampBetToBalance(baseBet, lastBalance);
+    currentBet = baseBet;
 
     const rawResets = parseInt(localStorage.getItem(STORAGE.resetCount), 10);
     resetCount = Number.isInteger(rawResets) && rawResets >= 0 ? rawResets : 0;
@@ -242,6 +251,7 @@
 
     while (isRunning) {
       refreshRunLock();
+      currentBet = clampBetToBalance(currentBet, Math.max(getBalance(), DISPLAY_UNIT));
       applyDiceSettings();
 
       const rollBtn = getRollButton();
@@ -265,11 +275,11 @@
       if (newBal > lastBalance) {
         totalWins += 1;
         addLog(`WIN! bet=${currentBet.toFixed(8)} profit=${cycleProfit.toFixed(8)}`);
-        currentBet = currentBet * STRATEGY.winMultiplier;
+        currentBet = clampBetToBalance(currentBet * STRATEGY.winMultiplier, newBal);
       } else if (newBal < lastBalance) {
         totalLosses += 1;
         addLog(`LOSS streak profit=${cycleProfit.toFixed(8)}`);
-        currentBet = currentBet * STRATEGY.lossMultiplier;
+        currentBet = clampBetToBalance(currentBet * STRATEGY.lossMultiplier, newBal);
       } else {
         addLog('NO BALANCE CHANGE — RETRYING');
         await sleep(ACTION_DELAY_MS);
